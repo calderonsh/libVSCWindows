@@ -22,6 +22,9 @@ class vsc_webview2
 		std::string title;
 
 		std::string html;
+		std::string javascript;
+
+		bool ready;
 
 		HWND hWindow = NULL;
 		wil::com_ptr<ICoreWebView2Controller> webviewController = nullptr;
@@ -69,6 +72,8 @@ vsc_webview2* vsc_webview2_new(const char* title, int width, int height)
 	result->height = height;
 	result->title = title;
 
+	result->ready = false;
+
 	return result;
 }
 
@@ -110,13 +115,18 @@ int vsc_webview2_open(vsc_webview2* _this)
 						_this->webviewController = controller;
 						_this->webviewController->get_CoreWebView2(&_this->webviewWindow);
 					}
-					
+
 					RECT bounds;
 					GetClientRect(_this->hWindow, &bounds);
 					_this->webviewController->put_Bounds(bounds);
 
 					if (_this->html.length() > 0) {
 						vsc_webview2_set_html(_this, _this->html.c_str());
+					}
+
+					_this->ready = true;
+					if (_this->javascript.length() > 0) {
+						vsc_webview2_eval(_this, _this->javascript.c_str());
 					}
 
 					return S_OK;
@@ -138,6 +148,30 @@ void vsc_webview2_set_html(vsc_webview2* _this, const char* html)
 		std::wstring wcsHTML(strHTML.begin(), strHTML.end());
 
 		_this->webviewWindow->NavigateToString(wcsHTML.c_str());
+	}
+}
+
+void vsc_webview2_eval(vsc_webview2* _this, const char* javascript)
+{
+	if (_this->webviewWindow == nullptr) {
+		_this->javascript += javascript;
+	}
+	else
+	{
+		std::string strJavascript = javascript;
+		std::wstring wcsJavascript(strJavascript.begin(), strJavascript.end());
+
+		while (_this->ready == false) {
+			Sleep(1);
+		}
+
+		_this->ready = false;
+		_this->webviewWindow->ExecuteScript(wcsJavascript.c_str(), Microsoft::WRL::Callback<ICoreWebView2ExecuteScriptCompletedHandler>(
+		[_this](HRESULT errorCode, LPCWSTR resultObjectAsJson) -> HRESULT
+		{
+			_this->ready = true;
+			return S_OK;
+		}).Get());
 	}
 }
 
