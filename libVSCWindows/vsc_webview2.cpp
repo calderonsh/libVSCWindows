@@ -21,6 +21,8 @@ class vsc_webview2
 		int height;
 		std::string title;
 
+		std::string html;
+
 		HWND hWindow = NULL;
 		wil::com_ptr<ICoreWebView2Controller> webviewController = nullptr;
 		wil::com_ptr<ICoreWebView2> webviewWindow = nullptr;
@@ -72,7 +74,7 @@ vsc_webview2* vsc_webview2_new(const char* title, int width, int height)
 
 int vsc_webview2_open(vsc_webview2* _this)
 {
-	const wchar_t szWindowClass[] = L"VCSWebview2";
+	const wchar_t szWindowClass[] = L"VSCWebview2";
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 
 	WNDCLASSEX wndClassEx;
@@ -112,7 +114,11 @@ int vsc_webview2_open(vsc_webview2* _this)
 					RECT bounds;
 					GetClientRect(_this->hWindow, &bounds);
 					_this->webviewController->put_Bounds(bounds);
-					
+
+					if (_this->html.length() > 0) {
+						vsc_webview2_set_html(_this, _this->html.c_str());
+					}
+
 					return S_OK;
 				}).Get());
 
@@ -120,6 +126,19 @@ int vsc_webview2_open(vsc_webview2* _this)
 		}).Get());
 
 	return 0;
+}
+
+void vsc_webview2_set_html(vsc_webview2* _this, const char* html)
+{
+	if (_this->webviewWindow == nullptr) {
+		_this->html = html;
+	} else
+	{
+		std::string strHTML = html;
+		std::wstring wcsHTML(strHTML.begin(), strHTML.end());
+
+		_this->webviewWindow->NavigateToString(wcsHTML.c_str());
+	}
 }
 
 bool vsc_webview2_loop(vsc_webview2*)
