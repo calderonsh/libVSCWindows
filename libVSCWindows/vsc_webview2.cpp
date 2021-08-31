@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include <functional>
 #include <string>
 #include <map>
 
@@ -24,7 +25,9 @@ class vsc_webview2
 		std::string html;
 		std::string javascript;
 
-		bool ready;
+		bool ready = false;
+
+		std::function<void(vsc_webview2*, const char*)> callback = nullptr;
 
 		HWND hWindow = NULL;
 		wil::com_ptr<ICoreWebView2Controller> webviewController = nullptr;
@@ -71,8 +74,6 @@ vsc_webview2* vsc_webview2_new(const char* title, int width, int height)
 	result->width = width;
 	result->height = height;
 	result->title = title;
-
-	result->ready = false;
 
 	return result;
 }
@@ -129,6 +130,26 @@ int vsc_webview2_open(vsc_webview2* _this)
 						vsc_webview2_eval(_this, _this->javascript.c_str());
 					}
 
+					EventRegistrationToken token;
+					_this->webviewWindow->add_WebMessageReceived(Microsoft::WRL::Callback<ICoreWebView2WebMessageReceivedEventHandler>(
+						[_this](ICoreWebView2* webview, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT
+						{
+							if (_this->callback != nullptr)
+							{
+								PWSTR lpszMessage;
+								args->TryGetWebMessageAsString(&lpszMessage);
+
+								std::wstring wcsMessage = lpszMessage;
+								std::string strMessage(wcsMessage.begin(), wcsMessage.end());
+
+								_this->callback(_this, strMessage.c_str());
+
+								CoTaskMemFree(lpszMessage);
+							}
+
+							return S_OK;
+						}).Get(), &token);
+
 					return S_OK;
 				}).Get());
 
@@ -142,7 +163,8 @@ void vsc_webview2_set_html(vsc_webview2* _this, const char* html)
 {
 	if (_this->webviewWindow == nullptr) {
 		_this->html = html;
-	} else
+	}
+	else
 	{
 		std::string strHTML = html;
 		std::wstring wcsHTML(strHTML.begin(), strHTML.end());
@@ -173,6 +195,11 @@ void vsc_webview2_eval(vsc_webview2* _this, const char* javascript)
 			return S_OK;
 		}).Get());
 	}
+}
+
+void vsc_webview2_callback(vsc_webview2* _this, void (*callback)(vsc_webview2* _this, const char* message))
+{
+	_this->callback = callback;
 }
 
 bool vsc_webview2_loop(vsc_webview2*)

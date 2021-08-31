@@ -16,6 +16,7 @@ DLLEXPORT int vsc_webview2_open(vsc_webview2*);
 DLLEXPORT void vsc_webview2_set_html(vsc_webview2*, const char* html);
 
 DLLEXPORT void vsc_webview2_eval(vsc_webview2*, const char* javascript);
+DLLEXPORT void vsc_webview2_callback(vsc_webview2* _this, void (*callback)(vsc_webview2* _this, const char* message));
 
 DLLEXPORT bool vsc_webview2_loop(vsc_webview2*);
 
