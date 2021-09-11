@@ -13,6 +13,7 @@ DLLEXPORT vsc_webview2* vsc_webview2_new(const char* title, int width, int heigh
 
 DLLEXPORT int vsc_webview2_open(vsc_webview2*);
 
+DLLEXPORT void vsc_webview2_navigate(vsc_webview2* _this, const char* url);
 DLLEXPORT void vsc_webview2_set_html(vsc_webview2*, const char* html);
 
 DLLEXPORT void vsc_webview2_eval(vsc_webview2*, const char* javascript);

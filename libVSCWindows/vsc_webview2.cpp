@@ -22,7 +22,14 @@ class vsc_webview2
 		int height;
 		std::string title;
 
-		std::string html;
+		std::string data;
+
+		enum {
+			NONE = 0,
+			URL = 1,
+			HTML = 2
+		} navigationMode = vsc_webview2::NONE;
+
 		std::string javascript;
 
 		bool ready = false;
@@ -121,8 +128,18 @@ int vsc_webview2_open(vsc_webview2* _this)
 					GetClientRect(_this->hWindow, &bounds);
 					_this->webviewController->put_Bounds(bounds);
 
-					if (_this->html.length() > 0) {
-						vsc_webview2_set_html(_this, _this->html.c_str());
+					switch (_this->navigationMode)
+					{
+						case vsc_webview2::URL:
+							vsc_webview2_navigate(_this, _this->data.c_str());
+							break;
+
+						case vsc_webview2::HTML:
+							vsc_webview2_set_html(_this, _this->data.c_str());
+							break;
+
+						default:
+							break;
 					}
 
 					_this->ready = true;
@@ -159,10 +176,28 @@ int vsc_webview2_open(vsc_webview2* _this)
 	return 0;
 }
 
+void vsc_webview2_navigate(vsc_webview2* _this, const char* url)
+{
+	if (_this->webviewWindow == nullptr) 
+	{
+		_this->data = url;
+		_this->navigationMode = vsc_webview2::URL;
+	}
+	else
+	{
+		std::string strURL = url;
+		std::wstring wcsHTML(strURL.begin(), strURL.end());
+
+		_this->webviewWindow->Navigate(wcsHTML.c_str());
+	}
+}
+
 void vsc_webview2_set_html(vsc_webview2* _this, const char* html)
 {
-	if (_this->webviewWindow == nullptr) {
-		_this->html = html;
+	if (_this->webviewWindow == nullptr) 
+	{
+		_this->data = html;
+		_this->navigationMode = vsc_webview2::HTML;
 	}
 	else
 	{
