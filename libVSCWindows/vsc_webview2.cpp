@@ -105,8 +105,11 @@ int vsc_webview2_open(vsc_webview2* _this)
 	wndClassEx.hIconSm = LoadIcon(hInstance, IDI_APPLICATION);
 	RegisterClassEx(&wndClassEx);
 
+	RECT rect = {0, 0, _this->width, _this->height };
+	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
+
 	std::wstring wcsTitle(_this->title.begin(), _this->title.end());
-	_this->hWindow = CreateWindow(szWindowClass, wcsTitle.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, _this->width, _this->height, NULL, NULL, hInstance, NULL);
+	_this->hWindow = CreateWindow(szWindowClass, wcsTitle.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, hInstance, NULL);
 	vsc_webview2_map[_this->hWindow] = _this;
 
 	ShowWindow(_this->hWindow, SW_SHOWNORMAL);
